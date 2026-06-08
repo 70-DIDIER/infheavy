@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartHome IoT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            borderRadius: { card: '16px' },
+            keyframes: {
+              'pulse-glow': {
+                '0%, 100%': { boxShadow: '0 0 8px rgba(59,130,246,0.4)' },
+                '50%': { boxShadow: '0 0 24px rgba(59,130,246,0.8)' },
+              },
+              'slide-in': {
+                from: { transform: 'translateX(100%)', opacity: '0' },
+                to: { transform: 'translateX(0)', opacity: '1' },
+              },
+            },
+            animation: {
+              'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+              'slide-in': 'slide-in 0.3s ease-out',
+            },
+          },
+        },
+      }
+    </script>
+    <style type="text/tailwindcss">
+      @layer utilities {
+        .glow-blue  { box-shadow: 0 0 20px rgba(59,130,246,0.25); }
+        .glow-green { box-shadow: 0 0 20px rgba(16,185,129,0.25); }
+        .glow-red   { box-shadow: 0 0 20px rgba(239,68,68,0.25); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
