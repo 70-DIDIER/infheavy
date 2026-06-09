@@ -1,11 +1,11 @@
 import React, { type ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { Icon } from '../ui/Icon';
 
 interface Props {
   label:        string;
   value:        string | number;
   unit:         string;
-  icon:         LucideIcon;
+  icon:         string;
   status?:      'good' | 'warning' | 'danger';
   statusLabel?: string;
   extra?:       ReactNode;
@@ -18,7 +18,7 @@ const statusCls = {
   danger:  'text-red-400    bg-red-500/10    border-red-500/25',
 };
 
-export function SensorCard({ label, value, unit, icon: Icon, status = 'good', statusLabel, extra, animate }: Props) {
+export function SensorCard({ label, value, unit, icon, status = 'good', statusLabel, extra, animate }: Props) {
   const cls = statusCls[status];
   return (
     <div className={`bg-slate-800 border border-slate-700 rounded-card p-4 transition-all
@@ -26,7 +26,7 @@ export function SensorCard({ label, value, unit, icon: Icon, status = 'good', st
     >
       <div className="flex items-start justify-between mb-3">
         <div className={`p-2 rounded-xl border ${cls}`}>
-          <Icon size={18} />
+          <Icon name={icon} size={18} />
         </div>
         {statusLabel && (
           <span className={`text-xs px-2 py-1 rounded-full border font-medium ${cls}`}>{statusLabel}</span>

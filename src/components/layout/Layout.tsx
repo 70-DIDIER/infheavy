@@ -6,7 +6,7 @@ import { useSmartHome }   from '../../context/SmartHomeContext';
 import type { Alert }     from '../../types';
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { esp32Online, newAlert, clearNewAlert } = useSmartHome();
+  const { newAlert, clearNewAlert } = useSmartHome();
   const [toasts, setToasts] = useState<Alert[]>([]);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-slate-900">
-      <Sidebar esp32Online={esp32Online} />
+      <Sidebar />
       <div className="ml-60 flex flex-col min-h-screen">
         <Header />
         <main className="flex-1 p-6 overflow-auto">

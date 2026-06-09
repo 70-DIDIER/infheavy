@@ -1,7 +1,7 @@
 import React from 'react';
-import { CheckCircle, Flame, Wind, UserCheck, Thermometer, Snowflake, Cloud, MapPin, Clock } from 'lucide-react';
-import type { Alert } from '../../types';
-import { AlertBadge } from './AlertBadge';
+import { Icon }        from '../ui/Icon';
+import type { Alert }  from '../../types';
+import { AlertBadge }  from './AlertBadge';
 
 interface Props {
   alert:       Alert;
@@ -9,13 +9,13 @@ interface Props {
   canResolve?: boolean;
 }
 
-const cfg: Record<Alert['type'], { icon: typeof Flame; label: string; cls: string }> = {
-  FIRE:      { icon: Flame,        label: 'Incendie',      cls: 'text-red-400    bg-red-500/10    border-red-500/20'    },
-  GAS_LEAK:  { icon: Wind,         label: 'Fuite de gaz',  cls: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
-  INTRUSION: { icon: UserCheck,    label: 'Intrusion',     cls: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
-  TEMP_HIGH: { icon: Thermometer,  label: 'Temp. élevée',  cls: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
-  TEMP_LOW:  { icon: Snowflake,    label: 'Temp. basse',   cls: 'text-blue-400   bg-blue-500/10   border-blue-500/20'   },
-  AIR_BAD:   { icon: Cloud,        label: 'Air dégradé',   cls: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+const cfg: Record<Alert['type'], { icon: string; label: string; accent: string; iconCls: string }> = {
+  FIRE:       { icon: 'local_fire_department', label: 'Incendie',        accent: 'border-l-red-500',    iconCls: 'bg-red-500/10 text-red-400'    },
+  GAS_LEAK:   { icon: 'air',                   label: 'Fuite de gaz',    accent: 'border-l-orange-500', iconCls: 'bg-orange-500/10 text-orange-400' },
+  INTRUSION:  { icon: 'person_check',          label: 'Intrusion',       accent: 'border-l-amber-500',  iconCls: 'bg-amber-500/10 text-amber-400'  },
+  HIGH_TEMP:  { icon: 'device_thermostat',     label: 'Temp. élevée',    accent: 'border-l-orange-500', iconCls: 'bg-orange-500/10 text-orange-400' },
+  WATER_LEAK: { icon: 'water_drop',            label: "Fuite d'eau",     accent: 'border-l-blue-500',   iconCls: 'bg-blue-500/10 text-blue-400'    },
+  POWER_CUT:  { icon: 'bolt',                  label: 'Coupure secteur', accent: 'border-l-purple-500', iconCls: 'bg-purple-500/10 text-purple-400' },
 };
 
 function timeAgo(d: string) {
@@ -26,60 +26,45 @@ function timeAgo(d: string) {
 }
 
 export function AlertItem({ alert, onResolve, canResolve }: Props) {
-  const { icon: Icon, label, cls } = cfg[alert.type];
-  const critical = alert.severity === 'CRITICAL' && !alert.resolved;
-  const textCls  = cls.split(' ')[0];
+  const entry = cfg[alert.type] ?? cfg['FIRE'];
 
   return (
-    <div className={`flex items-center gap-4 p-4 rounded-card border transition-all
-      ${alert.resolved
-        ? 'bg-slate-800/50 border-slate-700/50 opacity-60'
-        : `border ${cls} ${critical ? 'animate-pulse' : ''}`
-      }`}
-    >
-      {/* Icon */}
-      <div className={`p-2.5 rounded-xl border flex-shrink-0
-        ${alert.resolved ? 'bg-slate-800 border-slate-700 text-slate-500' : cls}`}>
-        <Icon size={17} />
+    <div className={`flex items-center gap-3 p-3 rounded-card bg-slate-800 border border-slate-700
+      border-l-4 ${alert.resolved ? 'border-l-slate-600 opacity-60' : entry.accent}`}>
+      <div className={`p-2 rounded-lg flex-shrink-0 ${alert.resolved ? 'bg-slate-700 text-slate-500' : entry.iconCls}`}>
+        <Icon name={entry.icon} size={16} />
       </div>
 
-      {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2 mb-0.5">
-          <span className={`font-semibold text-sm ${alert.resolved ? 'text-slate-500' : textCls}`}>
-            {label}
-          </span>
+          <span className="font-bold text-sm text-slate-100">{entry.label}</span>
           <AlertBadge severity={alert.severity} />
           {alert.resolved && (
-            <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-              Résolu
+            <span className="text-[10px] px-2 py-px font-bold uppercase rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+              RÉSOLU
             </span>
           )}
         </div>
-
         <p className="text-slate-400 text-xs">{alert.message}</p>
-
-        <div className="flex items-center gap-3 mt-1.5">
+        <div className="flex items-center gap-3 mt-1">
           <span className="flex items-center gap-1 text-slate-500 text-xs">
-            <MapPin size={11} />
-            {alert.zone}
+            <Icon name="location_on" size={11} /> {alert.zone}
           </span>
-          <span className="text-slate-700">·</span>
+          <span className="text-slate-600">·</span>
           <span className="flex items-center gap-1 text-slate-500 text-xs">
-            <Clock size={11} />
-            {timeAgo(alert.createdAt)}
+            <Icon name="schedule" size={11} /> {timeAgo(alert.createdAt)}
           </span>
         </div>
       </div>
 
-      {/* Resolve button */}
       {canResolve && !alert.resolved && (
         <button
           onClick={() => onResolve?.(alert.id)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-400
-            hover:bg-emerald-500/30 text-xs font-medium transition-all border border-emerald-500/20 flex-shrink-0"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg flex-shrink-0
+            bg-emerald-500/10 text-emerald-400 border border-emerald-500/30
+            hover:bg-emerald-500/20 transition-colors"
         >
-          <CheckCircle size={13} />
+          <Icon name="check_circle" size={13} />
           Résoudre
         </button>
       )}

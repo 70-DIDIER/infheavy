@@ -1,17 +1,21 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Zap, Bell, BarChart2, Settings, LogOut, Cpu } from 'lucide-react';
-import { useAuth }    from '../../hooks/useAuth';
-import { StatusDot }  from '../ui/StatusDot';
-
-interface Props { esp32Online: boolean }
+import { Icon }         from '../ui/Icon';
+import { useAuth }      from '../../hooks/useAuth';
+import { useSmartHome } from '../../context/SmartHomeContext';
 
 const NAV = [
-  { path: '/dashboard',   icon: Home,      label: 'Dashboard'   },
-  { path: '/actionneurs', icon: Zap,       label: 'Actionneurs' },
-  { path: '/alertes',     icon: Bell,      label: 'Alertes'     },
-  { path: '/historique',  icon: BarChart2, label: 'Historique'  },
-  { path: '/parametres',  icon: Settings,  label: 'Paramètres', adminOnly: true },
+  { path: '/dashboard',   icon: 'home',          label: 'Dashboard'   },
+  { path: '/appareils',   icon: 'device_hub',    label: 'Appareils'   },
+  { path: '/alertes',     icon: 'notifications', label: 'Alertes'     },
+  { path: '/cameras',     icon: 'videocam',      label: 'Caméras'     },
+  { path: '/historique',  icon: 'bar_chart',     label: 'Historique'  },
+  { path: '/energie',        icon: 'bolt',          label: 'Énergie',        roles: ['ADMIN', 'USER'] as string[] },
+  { path: '/disponibilite', icon: 'wifi_tethering', label: 'Disponibilité',  roles: ['ADMIN', 'USER'] as string[] },
+  { path: '/voix',        icon: 'mic',           label: 'Voix',        roles: ['ADMIN', 'USER'] as string[] },
+  { path: '/automations', icon: 'account_tree',  label: 'Automations', roles: ['ADMIN', 'USER'] as string[] },
+  { path: '/zones',       icon: 'location_on',   label: 'Zones',       adminOnly: true },
+  { path: '/parametres',  icon: 'settings',      label: 'Paramètres',  adminOnly: true },
 ];
 
 const roleBadge: Record<string, string> = {
@@ -20,9 +24,11 @@ const roleBadge: Record<string, string> = {
   GUEST: 'bg-slate-700/80 text-slate-400 border border-slate-600',
 };
 
-export function Sidebar({ esp32Online }: Props) {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+export function Sidebar() {
+  const { user, logout }           = useAuth();
+  const { actuators, wsConnected } = useSmartHome();
+  const navigate                   = useNavigate();
+  const onlineCount = actuators.filter(a => a.status === 'ONLINE').length;
 
   return (
     <aside className="fixed inset-y-0 left-0 w-60 bg-slate-900 border-r border-slate-700/60 flex flex-col z-40 select-none">
@@ -31,7 +37,7 @@ export function Sidebar({ esp32Online }: Props) {
       <div className="px-5 py-5 border-b border-slate-700/60">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 flex-shrink-0">
-            <Cpu size={18} className="text-white" />
+            <Icon name="developer_board" size={18} className="text-white" />
           </div>
           <div>
             <p className="font-bold text-slate-100 text-base leading-none">SmartHome</p>
@@ -40,23 +46,26 @@ export function Sidebar({ esp32Online }: Props) {
         </div>
       </div>
 
-      {/* ESP32 status */}
+      {/* Status */}
       <div className="mx-4 mt-4 px-3 py-2 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center gap-2">
-        <StatusDot online={esp32Online} size="sm" />
-        <span className="text-slate-400 text-xs">ESP32</span>
-        <span className={`ml-auto text-xs font-semibold ${esp32Online ? 'text-emerald-400' : 'text-red-400'}`}>
-          {esp32Online ? 'En ligne' : 'Hors ligne'}
+        <Icon name={wsConnected ? 'wifi_tethering' : 'signal_wifi_off'} size={13}
+              className={wsConnected ? 'text-emerald-400' : 'text-slate-600'} />
+        <span className="text-slate-400 text-xs">Réseau</span>
+        <span className={`ml-auto text-xs font-semibold ${wsConnected ? 'text-emerald-400' : 'text-slate-500'}`}>
+          {wsConnected ? `${onlineCount} en ligne` : 'Hors ligne'}
         </span>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 px-3 mt-5 space-y-0.5">
-        {NAV.map(({ path, icon: Icon, label, adminOnly }) => {
+        {NAV.map(({ path, icon, label, adminOnly, roles }) => {
           if (adminOnly && user?.role !== 'ADMIN') return null;
+          if (roles && !roles.includes(user?.role ?? '')) return null;
           return (
             <NavLink
               key={path}
               to={path}
+              end={path === '/dashboard'}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
                 ${isActive
@@ -65,21 +74,21 @@ export function Sidebar({ esp32Online }: Props) {
                 }`
               }
             >
-              <Icon size={17} />
+              <Icon name={icon} size={17} />
               {label}
             </NavLink>
           );
         })}
       </nav>
 
-      {/* User block */}
+      {/* User */}
       <div className="p-4 border-t border-slate-700/60 space-y-2.5">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
             {user?.prenom?.[0]}{user?.nom?.[0]}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-slate-100 text-sm font-medium truncate">{user?.prenom} {user?.nom}</p>
+            <p className="text-slate-100 text-sm font-semibold truncate">{user?.prenom} {user?.nom}</p>
             <span className={`text-xs px-1.5 py-0.5 rounded-md ${roleBadge[user?.role ?? 'GUEST']}`}>
               {user?.role}
             </span>
@@ -90,7 +99,7 @@ export function Sidebar({ esp32Online }: Props) {
           className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-slate-400
             hover:text-red-400 hover:bg-red-500/10 text-sm transition-all"
         >
-          <LogOut size={15} />
+          <Icon name="logout" size={15} />
           Déconnexion
         </button>
       </div>

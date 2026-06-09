@@ -5,38 +5,47 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SmartHome IoT</title>
+
+    <!-- Google Fonts: Roboto + Roboto Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- Google Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
-            borderRadius: { card: '16px' },
+            fontFamily: {
+              sans: ['Roboto', 'system-ui', 'sans-serif'],
+              mono: ['Roboto Mono', 'Consolas', 'monospace'],
+            },
+            borderRadius: { card: '12px' },
             keyframes: {
-              'pulse-glow': {
-                '0%, 100%': { boxShadow: '0 0 8px rgba(59,130,246,0.4)' },
-                '50%': { boxShadow: '0 0 24px rgba(59,130,246,0.8)' },
-              },
               'slide-in': {
                 from: { transform: 'translateX(100%)', opacity: '0' },
-                to: { transform: 'translateX(0)', opacity: '1' },
+                to:   { transform: 'translateX(0)',    opacity: '1' },
               },
             },
-            animation: {
-              'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
-              'slide-in': 'slide-in 0.3s ease-out',
-            },
+            animation: { 'slide-in': 'slide-in 0.3s ease-out' },
           },
         },
       }
     </script>
     <style type="text/tailwindcss">
       @layer utilities {
-        .glow-blue  { box-shadow: 0 0 20px rgba(59,130,246,0.25); }
-        .glow-green { box-shadow: 0 0 20px rgba(16,185,129,0.25); }
-        .glow-red   { box-shadow: 0 0 20px rgba(239,68,68,0.25); }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+          vertical-align: middle;
+          line-height: 1;
+          user-select: none;
+        }
       }
     </style>
   </head>

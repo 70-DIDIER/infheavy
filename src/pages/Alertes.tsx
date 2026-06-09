@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Bell, CheckCircle } from 'lucide-react';
+import { Icon }         from '../components/ui/Icon';
 import { useSmartHome } from '../context/SmartHomeContext';
 import { useAuth }      from '../hooks/useAuth';
 import { AlertItem }    from '../components/alerts/AlertItem';
 import { alertApi }     from '../services/api';
-import type { Alert }   from '../types';
 
 type Filter = 'Toutes' | 'CRITICAL' | 'WARNING' | 'INFO' | 'Résolues';
 const FILTERS: Filter[] = ['Toutes', 'CRITICAL', 'WARNING', 'INFO', 'Résolues'];
@@ -43,7 +42,7 @@ export function Alertes() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Bell size={24} className="text-slate-300" />
+            <Icon name="notifications" size={24} className="text-slate-300" />
             {activeCount > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center font-bold">
                 {activeCount > 9 ? '9+' : activeCount}
@@ -63,7 +62,7 @@ export function Alertes() {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-400
               hover:bg-emerald-500/30 text-sm font-medium border border-emerald-500/20 transition-all"
           >
-            <CheckCircle size={15} />
+            <Icon name="check_circle" size={15} />
             Tout résoudre
           </button>
         )}
@@ -96,7 +95,7 @@ export function Alertes() {
       <div className="space-y-2">
         {filtered.length === 0 ? (
           <div className="text-center py-16 text-slate-500">
-            <CheckCircle size={36} className="mx-auto mb-3 opacity-40" />
+            <Icon name="check_circle" size={36} className="mx-auto mb-3 opacity-40" />
             <p className="text-sm">Aucune alerte dans cette catégorie</p>
           </div>
         ) : (

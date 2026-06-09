@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
-import { WifiOff } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Icon } from '../components/ui/Icon';
 import { useSmartHome } from '../context/SmartHomeContext';
 import { DeviceCard }   from '../components/actuators/DeviceCard';
-
-const ROOMS = ['Tout', 'Salon', 'Cuisine', 'Chambre 1', 'Chambre 2', 'Extérieur', 'Général'];
 
 export function Actionneurs() {
   const { actuators, esp32Online, sendCommand } = useSmartHome();
   const [filter, setFilter] = useState('Tout');
+
+  const rooms = useMemo(
+    () => ['Tout', ...new Set(actuators.map(a => a.room).filter(Boolean))],
+    [actuators],
+  );
 
   const filtered = filter === 'Tout' ? actuators : actuators.filter(a => a.room === filter);
   const activeCount = actuators.filter(a => a.state).length;
@@ -22,7 +25,7 @@ export function Actionneurs() {
         </div>
         {!esp32Online && (
           <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/25 rounded-xl text-red-400 text-sm">
-            <WifiOff size={15} />
+            <Icon name="wifi_off" size={15} />
             <span>ESP32 hors ligne</span>
           </div>
         )}
@@ -30,7 +33,7 @@ export function Actionneurs() {
 
       {/* Room filter */}
       <div className="flex flex-wrap gap-2">
-        {ROOMS.map(room => (
+        {rooms.map(room => (
           <button key={room} onClick={() => setFilter(room)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all
               ${filter === room
@@ -59,7 +62,7 @@ export function Actionneurs() {
         {/* Offline overlay */}
         {!esp32Online && (
           <div className="absolute inset-0 bg-slate-900/60 rounded-card flex flex-col items-center justify-center backdrop-blur-sm">
-            <WifiOff size={40} className="text-red-400 mb-3" />
+            <Icon name="wifi_off" size={40} className="text-red-400 mb-3" />
             <p className="text-red-400 font-bold text-lg">ESP32 Hors Ligne</p>
             <p className="text-slate-400 text-sm mt-1">Les commandes sont désactivées</p>
           </div>

@@ -1,18 +1,18 @@
 import React from 'react';
-import { Thermometer, type LucideIcon } from 'lucide-react';
+import { Icon } from '../ui/Icon';
 import { StatusDot } from '../ui/StatusDot';
 
 interface Device { name: string; state: boolean }
 
 interface Props {
   name:         string;
-  icon:         LucideIcon;
+  icon:         string;
   temperature?: number;
   devices:      Device[];
   online?:      boolean;
 }
 
-export function RoomCard({ name, icon: Icon, temperature, devices, online = true }: Props) {
+export function RoomCard({ name, icon, temperature, devices, online = true }: Props) {
   const on = devices.filter(d => d.state).length;
 
   return (
@@ -22,7 +22,7 @@ export function RoomCard({ name, icon: Icon, temperature, devices, online = true
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className={`p-2 rounded-xl ${on > 0 ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-700 text-slate-400'}`}>
-            <Icon size={16} />
+            <Icon name={icon} size={16} />
           </div>
           <div>
             <h3 className="font-semibold text-slate-100 text-sm">{name}</h3>
@@ -34,7 +34,7 @@ export function RoomCard({ name, icon: Icon, temperature, devices, online = true
 
       {temperature !== undefined && (
         <div className="flex items-center gap-1.5 mb-2 text-slate-400">
-          <Thermometer size={13} />
+          <Icon name="device_thermostat" size={13} />
           <span className="text-sm font-medium">{temperature.toFixed(1)}°C</span>
         </div>
       )}
