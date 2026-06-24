@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Icon }         from '../ui/Icon';
 import { useAuth }      from '../../hooks/useAuth';
@@ -20,9 +20,16 @@ export function Header() {
   const { wsConnected, alerts } = useSmartHome();
   const page         = labels[pathname] ?? 'Dashboard';
   const activeAlerts = alerts.filter(a => !a.resolved).length;
-  const date         = new Date().toLocaleDateString('fr-FR', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  });
+
+  const [time, setTime] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const date     = time.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const clockStr = time.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   return (
     <header className="sticky top-0 z-30 h-14 bg-slate-900/90 backdrop-blur-sm border-b border-slate-700/60 flex items-center px-6 gap-4">
@@ -49,7 +56,14 @@ export function Header() {
           {wsConnected ? 'API connectée' : 'Données hors ligne'}
         </div>
 
-        <span className="hidden md:block text-slate-500 text-xs capitalize">{date}</span>
+        {/* Live clock */}
+        <div className="hidden md:flex items-center gap-1.5 text-xs text-slate-400 font-mono
+          bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1">
+          <Icon name="schedule" size={13} className="text-slate-500" />
+          <span>{clockStr}</span>
+        </div>
+
+        <span className="hidden lg:block text-slate-500 text-xs capitalize">{date}</span>
 
         {user && (
           <p className="text-sm text-slate-300">

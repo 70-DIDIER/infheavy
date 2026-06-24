@@ -6,6 +6,8 @@ import { Modal }         from '../components/ui/Modal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import type { Automation, Device } from '../types';
 
+const API_BASE = import.meta.env.VITE_API_URL ?? '';
+
 type TriggerType  = 'SENSOR_THRESHOLD' | 'TIME_BASED' | 'DEVICE_STATUS';
 type ConditionOp  = 'GT' | 'LT' | 'EQ' | 'GTE' | 'LTE';
 
@@ -52,6 +54,14 @@ export function Automations() {
   const [form,        setForm]        = useState<FormState>(EMPTY);
   const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState('');
+  const [serverTime,  setServerTime]  = useState<{ hhmm: string; timezone: string } | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/time`)
+      .then(r => r.json())
+      .then(d => setServerTime({ hhmm: d.hhmm, timezone: d.timezone }))
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -314,11 +324,18 @@ export function Automations() {
               )}
 
               {form.trigger_type === 'TIME_BASED' && (
-                <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Heure de déclenchement</label>
+                <div className="col-span-2 space-y-2">
+                  <label className="block text-xs font-medium text-slate-400">Heure de déclenchement</label>
                   <input type="time" value={form.trigger_time} onChange={e => f({ trigger_time: e.target.value })}
                     className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm
                       text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500" />
+                  {serverTime && (
+                    <p className="flex items-center gap-1.5 text-xs text-amber-400/80 bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-1.5">
+                      <Icon name="info" size={12} />
+                      Heure actuelle du serveur&nbsp;:&nbsp;<strong>{serverTime.hhmm}</strong>
+                      &nbsp;({serverTime.timezone}) — entrez l'heure dans ce fuseau.
+                    </p>
+                  )}
                 </div>
               )}
 

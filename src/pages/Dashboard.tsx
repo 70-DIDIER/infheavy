@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useSmartHome }   from '../context/SmartHomeContext';
-import { sensorApi }      from '../services/api';
 import { GaugeWidget }    from '../components/sensors/GaugeWidget';
 import { Icon }           from '../components/ui/Icon';
 import { VoiceFab }       from '../components/ui/VoiceFab';
@@ -167,9 +166,10 @@ function ActuatorCard({ device, onToggle, isOn }: {
           <DeviceStatusDot online={device.status === 'ONLINE'} />
           <button
             onClick={() => onToggle(device.id, !isOn)}
-            disabled={device.status === 'OFFLINE'}
-            className={`relative w-10 h-5 rounded-full transition-colors disabled:opacity-40
-              ${isOn ? 'bg-blue-500' : 'bg-slate-700'}`}
+            title={device.status === 'OFFLINE' ? 'Commande mise en file — sera appliquée à la reconnexion' : undefined}
+            className={`relative w-10 h-5 rounded-full transition-colors
+              ${isOn ? 'bg-blue-500' : 'bg-slate-700'}
+              ${device.status === 'OFFLINE' ? 'opacity-50' : ''}`}
           >
             <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform
               ${isOn ? 'translate-x-5' : ''}`} />
@@ -257,29 +257,12 @@ function FilterBar({
 
 // ── Main component ────────────────────────────────────────────
 export function Dashboard() {
-  const { actuators, alerts, sendCommand } = useSmartHome();
-
-  const [sensorReadings, setSensorReadings] = useState<SensorSummaryReading[]>([]);
-  const [loading,        setLoading]        = useState(true);
+  const { actuators, alerts, sendCommand, sensorReadings, sensorLoading } = useSmartHome();
 
   const [search,       setSearch]       = useState('');
   const [filterZone,   setFilterZone]   = useState('all');
   const [filterStatus, setFilterStatus] = useState<StatusFilter>('all');
   const [filterType,   setFilterType]   = useState<TypeFilter>('all');
-
-  const load = useCallback(async () => {
-    try {
-      const res = await sensorApi.getSummary();
-      setSensorReadings(res.data.readings ?? []);
-    } catch {}
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-    const id = setInterval(load, 10_000);
-    return () => clearInterval(id);
-  }, [load]);
 
   const activeAlerts = alerts.filter(a => !a.resolved).length;
   const onlineOutput = actuators.filter(a => a.status === 'ONLINE').length;
@@ -327,7 +310,15 @@ export function Dashboard() {
     return [...s];
   }, [filteredSensors, filteredActuators]);
 
-  if (loading) return (
+  const handleAllOn  = useCallback(() => {
+    filteredActuators.filter(a => !a.state).forEach(a => sendCommand(a.id, true));
+  }, [filteredActuators, sendCommand]);
+
+  const handleAllOff = useCallback(() => {
+    filteredActuators.filter(a => a.state).forEach(a => sendCommand(a.id, false));
+  }, [filteredActuators, sendCommand]);
+
+  if (sensorLoading) return (
     <div className="flex justify-center items-center py-24">
       <div className="w-7 h-7 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
     </div>
@@ -362,13 +353,39 @@ export function Dashboard() {
         <VoiceFab />
       </div>
 
-      {/* Filters */}
-      <FilterBar
-        zones={allZones}
-        search={search} zone={filterZone} status={filterStatus} type={filterType}
-        onSearch={setSearch} onZone={setFilterZone} onStatus={setFilterStatus} onType={setFilterType}
-        onClear={clearFilters} hasActive={hasActiveFilters}
-      />
+      {/* Filters + bulk actions */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <FilterBar
+            zones={allZones}
+            search={search} zone={filterZone} status={filterStatus} type={filterType}
+            onSearch={setSearch} onZone={setFilterZone} onStatus={setFilterStatus} onType={setFilterType}
+            onClear={clearFilters} hasActive={hasActiveFilters}
+          />
+        </div>
+        {filteredActuators.length > 1 && (
+          <div className="flex gap-2 flex-shrink-0">
+            <button
+              onClick={handleAllOn}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium
+                bg-blue-600/20 text-blue-400 border border-blue-500/30
+                hover:bg-blue-600/30 transition-colors"
+            >
+              <Icon name="flash_on" size={13} />
+              Tout allumer
+            </button>
+            <button
+              onClick={handleAllOff}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium
+                bg-slate-700/60 text-slate-400 border border-slate-600
+                hover:bg-slate-700 hover:text-slate-200 transition-colors"
+            >
+              <Icon name="power_settings_new" size={13} />
+              Tout éteindre
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Empty state */}
       {visibleZones.length === 0 && (

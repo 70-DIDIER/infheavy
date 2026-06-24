@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { SensorData, Actuator, Alert } from '../types';
+import type { SensorData, Actuator, Alert, SensorSummaryReading } from '../types';
 import { sensorApi, actuatorApi, alertApi } from '../services/api';
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'http://localhost:3000';
@@ -12,12 +12,14 @@ const EMPTY_SENSORS: SensorData = {
 };
 
 interface State {
-  sensorData:  SensorData;
-  actuators:   Actuator[];
-  alerts:      Alert[];
-  esp32Online: boolean;
-  wsConnected: boolean;
-  newAlert:    Alert | null;
+  sensorData:     SensorData;
+  sensorReadings: SensorSummaryReading[];
+  sensorLoading:  boolean;
+  actuators:      Actuator[];
+  alerts:         Alert[];
+  esp32Online:    boolean;
+  wsConnected:    boolean;
+  newAlert:       Alert | null;
 }
 
 function airQualityLabel(value: unknown): SensorData['airQuality'] {
@@ -80,12 +82,13 @@ function normalizeAlert(raw: Record<string, unknown>): Alert {
 
 export function useWebSocket(token: string | null) {
   const [state, setState] = useState<State>({
-    sensorData: EMPTY_SENSORS, actuators: [], alerts: [],
+    sensorData: EMPTY_SENSORS, sensorReadings: [], sensorLoading: true,
+    actuators: [], alerts: [],
     esp32Online: false, wsConnected: false, newAlert: null,
   });
 
-  const socketRef  = useRef<Socket | null>(null);
-  const knownIds   = useRef(new Set<number>());
+  const socketRef = useRef<Socket | null>(null);
+  const knownIds  = useRef(new Set<number>());
 
   // ── Initial data load via HTTP (one shot, populates state before first WS event)
   useEffect(() => {
@@ -95,9 +98,10 @@ export function useWebSocket(token: string | null) {
       sensorApi.getLatest(),
       actuatorApi.getAll(),
       alertApi.getAll(),
-    ]).then(([sensors, actuators, alerts]) => {
+      sensorApi.getSummary(),
+    ]).then(([sensors, actuators, alerts, summary]) => {
       setState(p => {
-        let next = { ...p };
+        const next = { ...p, sensorLoading: false };
         if (sensors.status === 'fulfilled') {
           next.sensorData  = normalizeSensor(sensors.value.data as Record<string, unknown>, p.sensorData);
           next.esp32Online = true;
@@ -116,6 +120,12 @@ export function useWebSocket(token: string | null) {
             next.alerts = normalized;
           }
         }
+        if (summary.status === 'fulfilled') {
+          next.sensorReadings = summary.value.data.readings ?? [];
+          if (!next.esp32Online) {
+            next.esp32Online = next.sensorReadings.some(r => r.status === 'ONLINE');
+          }
+        }
         return next;
       });
     });
@@ -127,9 +137,11 @@ export function useWebSocket(token: string | null) {
 
     const socket = io(WS_URL, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'], // polling first — more reliable through cloud proxies
+      upgrade: true,
       reconnectionDelay:    1000,
-      reconnectionDelayMax: 10000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: Infinity,
     });
     socketRef.current = socket;
 
@@ -141,12 +153,43 @@ export function useWebSocket(token: string | null) {
       setState(p => ({ ...p, wsConnected: false }));
     });
 
-    // ── Sensor pushed by ESP32
+    // ── Sensor pushed by ESP32 — updates reading row and marks device ONLINE instantly
     socket.on('sensor:update', (data: Record<string, unknown>) => {
+      const deviceId = data.deviceId as number;
       setState(p => ({
         ...p,
         esp32Online: true,
         sensorData: normalizeSensor(data, p.sensorData),
+        sensorReadings: p.sensorReadings.map(r =>
+          r.device_id === deviceId
+            ? {
+                ...r,
+                status:      'ONLINE' as const,
+                recorded_at: (data.timestamp as string) ?? r.recorded_at,
+                temperature:  data.temperature  != null ? data.temperature  as number  : r.temperature,
+                humidity:     data.humidity     != null ? data.humidity     as number  : r.humidity,
+                gas_ppm:      data.gas_ppm      != null ? data.gas_ppm      as number  : r.gas_ppm,
+                air_quality:  data.air_quality  != null ? data.air_quality  as number  : r.air_quality,
+                motion:       data.motion       != null ? data.motion       as boolean : r.motion,
+                light_lux:    data.light_lux    != null ? data.light_lux    as number  : r.light_lux,
+                water_leak:   data.water_leak   != null ? data.water_leak   as boolean : r.water_leak,
+              }
+            : r
+        ),
+      }));
+    });
+
+    // ── Per-device ONLINE / OFFLINE (readings emit ONLINE, scheduler emits OFFLINE)
+    socket.on('device:status', ({ deviceId, status }: { deviceId: number; status: 'ONLINE' | 'OFFLINE' }) => {
+      setState(p => ({
+        ...p,
+        esp32Online: status === 'ONLINE' ? true : p.esp32Online,
+        sensorReadings: p.sensorReadings.map(r =>
+          r.device_id === deviceId ? { ...r, status } : r
+        ),
+        actuators: p.actuators.map(a =>
+          a.id === deviceId ? { ...a, status } : a
+        ),
       }));
     });
 
@@ -181,9 +224,18 @@ export function useWebSocket(token: string | null) {
       }));
     });
 
-    // ── ESP32 heartbeat — mark as online
-    socket.on('device:online', () => {
-      setState(p => ({ ...p, esp32Online: true }));
+    // ── Heartbeat — bulk-mark ESP32 devices ONLINE by their numeric IDs
+    socket.on('device:online', ({ deviceIds }: { deviceIds?: number[] }) => {
+      setState(p => ({
+        ...p,
+        esp32Online: true,
+        sensorReadings: deviceIds
+          ? p.sensorReadings.map(r => deviceIds.includes(r.device_id) ? { ...r, status: 'ONLINE' as const } : r)
+          : p.sensorReadings.map(r => ({ ...r, status: 'ONLINE' as const })),
+        actuators: deviceIds
+          ? p.actuators.map(a => deviceIds.includes(a.id) ? { ...a, status: 'ONLINE' as const } : a)
+          : p.actuators.map(a => ({ ...a, status: 'ONLINE' as const })),
+      }));
     });
 
     return () => {
@@ -200,12 +252,17 @@ export function useWebSocket(token: string | null) {
     }));
     try {
       await actuatorApi.control(actuatorId, newState);
-    } catch {
-      // Rollback on failure
-      setState(p => ({
-        ...p,
-        actuators: p.actuators.map(a => a.id === actuatorId ? { ...a, state: !newState } : a),
-      }));
+    } catch (err: unknown) {
+      // Only roll back on explicit 4xx rejection (bad request, not found, etc.).
+      // On timeout or 5xx the server may have already saved the command —
+      // rolling back would invert the display vs the actual relay state.
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status && status >= 400 && status < 500) {
+        setState(p => ({
+          ...p,
+          actuators: p.actuators.map(a => a.id === actuatorId ? { ...a, state: !newState } : a),
+        }));
+      }
     }
   }, []);
 

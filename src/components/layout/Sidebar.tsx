@@ -26,8 +26,8 @@ const roleBadge: Record<string, string> = {
 
 export function Sidebar() {
   const { user, logout }           = useAuth();
-  const { actuators, wsConnected } = useSmartHome();
-  const navigate                   = useNavigate();
+  const { actuators, wsConnected, esp32Online } = useSmartHome();
+  const navigate                                = useNavigate();
   const onlineCount = actuators.filter(a => a.status === 'ONLINE').length;
 
   return (
@@ -47,13 +47,23 @@ export function Sidebar() {
       </div>
 
       {/* Status */}
-      <div className="mx-4 mt-4 px-3 py-2 rounded-xl bg-slate-800 border border-slate-700/60 flex items-center gap-2">
-        <Icon name={wsConnected ? 'wifi_tethering' : 'signal_wifi_off'} size={13}
-              className={wsConnected ? 'text-emerald-400' : 'text-slate-600'} />
-        <span className="text-slate-400 text-xs">Réseau</span>
-        <span className={`ml-auto text-xs font-semibold ${wsConnected ? 'text-emerald-400' : 'text-slate-500'}`}>
-          {wsConnected ? `${onlineCount} en ligne` : 'Hors ligne'}
-        </span>
+      <div className="mx-4 mt-4 rounded-xl bg-slate-800 border border-slate-700/60 divide-y divide-slate-700/60">
+        <div className="px-3 py-2 flex items-center gap-2">
+          <Icon name={esp32Online ? 'developer_board' : 'cloud_off'} size={13}
+                className={esp32Online ? 'text-emerald-400' : 'text-slate-600'} />
+          <span className="text-slate-400 text-xs">ESP32</span>
+          <span className={`ml-auto text-xs font-semibold ${esp32Online ? 'text-emerald-400' : 'text-slate-500'}`}>
+            {esp32Online ? 'En ligne' : 'Hors ligne'}
+          </span>
+        </div>
+        <div className="px-3 py-2 flex items-center gap-2">
+          <Icon name={wsConnected ? 'wifi_tethering' : 'signal_wifi_off'} size={13}
+                className={wsConnected ? 'text-blue-400' : 'text-slate-600'} />
+          <span className="text-slate-400 text-xs">Temps réel</span>
+          <span className={`ml-auto text-xs font-semibold ${wsConnected ? 'text-blue-400' : 'text-slate-500'}`}>
+            {wsConnected ? `${onlineCount} actifs` : 'Déconnecté'}
+          </span>
+        </div>
       </div>
 
       {/* Nav */}

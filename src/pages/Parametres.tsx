@@ -163,45 +163,63 @@ export function Parametres() {
       </div>
 
       {/* ── Clé API ───────────────────────────────────── */}
-      {apiKey && (
-        <section className="bg-slate-800 border border-slate-700 rounded-card p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <Icon name="key" size={15} className="text-blue-400" /> Clé API du compte (ESP32)
-          </h2>
-          <p className="text-xs text-slate-500">
-            Configurez chaque ESP32 avec cette clé dans le header <code className="text-slate-300 bg-slate-900 px-1 py-0.5 rounded">x-api-key</code>.
-            Combinez-la avec la clé propre à chaque appareil (<code className="text-slate-300 bg-slate-900 px-1 py-0.5 rounded">x-device-key</code>).
-          </p>
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3">
-            <code className="flex-1 text-sm font-mono text-emerald-400 break-all">
-              {apiKeyVisible ? apiKey : `${apiKey.slice(0, 8)}${'•'.repeat(Math.max(0, apiKey.length - 8))}`}
-            </code>
-            <button onClick={() => setApiKeyVisible(v => !v)}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0"
-              title={apiKeyVisible ? 'Masquer' : 'Afficher'}>
-              <Icon name={apiKeyVisible ? 'visibility_off' : 'visibility'} size={15} />
+      <section className="bg-slate-800 border border-slate-700 rounded-card p-6 space-y-4">
+        <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+          <Icon name="key" size={15} className="text-blue-400" /> Clé API du compte (ESP32)
+        </h2>
+        <p className="text-xs text-slate-500">
+          Configurez chaque ESP32 avec cette clé dans le header <code className="text-slate-300 bg-slate-900 px-1 py-0.5 rounded">x-api-key</code>.
+          Combinez-la avec la clé propre à chaque appareil (<code className="text-slate-300 bg-slate-900 px-1 py-0.5 rounded">x-device-key</code>).
+        </p>
+
+        {apiKey ? (
+          <>
+            <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3">
+              <code className="flex-1 text-sm font-mono text-emerald-400 break-all">
+                {apiKeyVisible ? apiKey : `${apiKey.slice(0, 8)}${'•'.repeat(Math.max(0, apiKey.length - 8))}`}
+              </code>
+              <button onClick={() => setApiKeyVisible(v => !v)}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 transition-colors flex-shrink-0"
+                title={apiKeyVisible ? 'Masquer' : 'Afficher'}>
+                <Icon name={apiKeyVisible ? 'visibility_off' : 'visibility'} size={15} />
+              </button>
+              <button onClick={copyApiKey}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 transition-colors flex-shrink-0"
+                title="Copier">
+                <Icon name={apiKeyCopied ? 'check' : 'content_copy'} size={15}
+                  className={apiKeyCopied ? 'text-emerald-400' : ''} />
+              </button>
+            </div>
+            <button onClick={regenerateApiKey} disabled={apiKeyRegen}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-400
+                bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20
+                disabled:opacity-60 rounded-xl transition-colors">
+              {apiKeyRegen
+                ? <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                : <Icon name="refresh" size={14} />}
+              Régénérer la clé API
             </button>
-            <button onClick={copyApiKey}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 transition-colors flex-shrink-0"
-              title="Copier">
-              <Icon name={apiKeyCopied ? 'check' : 'content_copy'} size={15}
-                className={apiKeyCopied ? 'text-emerald-400' : ''} />
+            <p className="text-xs text-slate-600">
+              ⚠ Régénérer invalide immédiatement l'ancienne clé — tous les ESP32 devront être mis à jour.
+            </p>
+          </>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="text-xs text-amber-400 flex items-center gap-1.5">
+              <Icon name="warning" size={13} /> Aucune clé API générée pour ce compte.
+            </p>
+            <button onClick={regenerateApiKey} disabled={apiKeyRegen}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-400
+                bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20
+                disabled:opacity-60 rounded-xl transition-colors w-fit">
+              {apiKeyRegen
+                ? <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                : <Icon name="add" size={14} />}
+              Générer une clé API
             </button>
           </div>
-          <button onClick={regenerateApiKey} disabled={apiKeyRegen}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-400
-              bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20
-              disabled:opacity-60 rounded-xl transition-colors">
-            {apiKeyRegen
-              ? <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-              : <Icon name="refresh" size={14} />}
-            Régénérer la clé API
-          </button>
-          <p className="text-xs text-slate-600">
-            ⚠ Régénérer invalide immédiatement l'ancienne clé — tous les ESP32 devront être mis à jour.
-          </p>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* ── Seuils ────────────────────────────────────── */}
       <section className="bg-slate-800 border border-slate-700 rounded-card p-6 space-y-6">
